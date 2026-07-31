@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Turret Town 🏰 — Hold the Road</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f4ead6">
+<meta name="description" content="Build turrets along the road and stop the monsters reaching town. Fifteen maps, three bosses, an armoury — and an endless siege for the family leaderboard.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Turret Town">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/gk-base.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+</head>
+<body>
+
+<!-- Splash -->
+<div class="screen active" id="screen-splash">
+  <div class="splash-inner">
+    <div class="splash-keep" aria-hidden="true">🏰</div>
+    <h1 class="logo">TURRET<span>TOWN</span></h1>
+    <p class="tagline">They're coming up the road. Build something.</p>
+    <button class="btn big" id="btn-continue-as" style="display:none"></button>
+    <button class="btn big" id="btn-start" onclick="App.play()">⚔️ Take Command</button>
+    <button class="btn ghost" id="btn-install" style="display:none">📲 Add to Home Screen</button>
+    <div class="splash-foot">
+      <span id="sync-badge">…</span>
+      <button class="btn-sound icon-btn">🔊</button>
+      <button class="btn-music icon-btn" onclick="App.toggleMusic()">🎵</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile picker (roster + PIN modals rendered by GK.Profiles) -->
+<div class="screen" id="screen-profiles">
+  <header class="bar">
+    <button class="icon-btn" onclick="GK.UI.showScreen('splash')">←</button>
+    <h2>Who's in command?</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <div class="profile-list" id="profile-list"></div>
+</div>
+
+<!-- The campaign map: three regions of five -->
+<div class="screen" id="screen-map">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.play()">👥</button>
+    <div class="map-player" id="map-player"></div>
+    <button class="icon-btn" onclick="App.showLeaderboard()">🏆</button>
+  </header>
+  <button class="btn big continue" id="btn-continue"></button>
+  <div class="map-actions">
+    <button class="btn blue" onclick="App.showArmoury()">🛠️ Armoury</button>
+    <button class="btn blue" id="btn-siege" onclick="App.startSiege()"></button>
+    <button class="btn blue" onclick="App.showHelp()">❓ How to Play</button>
+  </div>
+  <div class="level-list" id="level-list"></div>
+</div>
+
+<!-- Armoury: permanent upgrades bought with coins -->
+<div class="screen" id="screen-armoury">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showMap()">←</button>
+    <h2>🛠️ Armoury</h2>
+    <span class="hud coins">🪙 <b id="shop-coins">0</b></span>
+  </header>
+  <p class="screen-hint">Coins come from finishing maps. Everything you buy here is yours for good, on every map.</p>
+  <div class="shop-list" id="shop-list"></div>
+</div>
+
+<!-- Leaderboard -->
+<div class="screen" id="screen-leaderboard">
+  <header class="bar">
+    <button class="icon-btn" onclick="App.showMap()">←</button>
+    <h2>🏆 Family Leaderboard</h2>
+    <button class="btn-sound icon-btn">🔊</button>
+  </header>
+  <p class="screen-hint">Ranked by best Long Siege score.</p>
+  <div class="lb-rows" id="lb-rows"></div>
+</div>
+
+<!-- The battle -->
+<div class="screen" id="screen-game">
+  <header class="bar game-bar">
+    <button class="icon-btn" onclick="App.pause()">⏸</button>
+    <span class="hud lives" id="hud-lives"></span>
+    <span class="hud gold" id="hud-gold"></span>
+    <span class="hud wave" id="hud-wave"></span>
+    <button class="icon-btn" id="btn-speed" onclick="App.toggleSpeed()">▶ 1×</button>
+    <button class="btn small next" id="btn-next" onclick="App.sendWave()"></button>
+  </header>
+  <!-- The build bar lives INSIDE the stage and is absolutely positioned: as a
+       flex sibling it would reflow the stage every time its contents changed,
+       and the board geometry would go stale mid-wave. -->
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="buildbar" id="buildbar">
+      <div class="bb-idle" id="bb-idle">Tap a <b>grassy square</b> to build a turret. Monsters follow the road.</div>
+      <div class="bb-build" id="bb-build" style="display:none"></div>
+      <div class="bb-tower" id="bb-tower" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="screen" id="screen-results">
+  <div class="res-inner">
+    <div class="res-emoji" id="res-emoji">🥳</div>
+    <h2 class="res-title" id="res-title"></h2>
+    <div class="res-stars" id="res-stars"></div>
+    <div class="res-score" id="res-score">0</div>
+    <div class="res-stats">
+      <div id="res-waves"></div>
+      <div id="res-kills"></div>
+      <div id="res-lives"></div>
+      <div id="res-coins"></div>
+      <div id="res-sand"></div>
+    </div>
+    <p class="res-finished" id="res-finished" style="display:none">👑 Every map held! The Warlord is beaten — now see how long you last in the Long Siege.</p>
+    <div class="res-actions">
+      <button class="btn ghost" onclick="App.showMap()">🗺️ Map</button>
+      <button class="btn ghost" onclick="App.showArmoury()">🛠️ Armoury</button>
+      <button class="btn" id="res-retry" style="display:none"></button>
+      <button class="btn" id="res-next" style="display:none"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div class="modal" id="modal-pause">
+  <div class="modal-box">
+    <h3>⏸ Paused</h3>
+    <button class="btn green wide" onclick="App.resume()">▶️ Back to the wall</button>
+    <button class="btn blue wide" onclick="App.showHelp()">❓ How to Play</button>
+    <div class="modal-actions">
+      <button class="btn-sound icon-btn">🔊</button>
+      <button class="btn-music icon-btn" onclick="App.toggleMusic()">🎵</button>
+    </div>
+    <button class="btn grey wide" onclick="App.quit()">🗺️ Give up the map</button>
+  </div>
+</div>
+
+<!-- How to play -->
+<div class="modal" id="modal-help">
+  <div class="modal-box">
+    <h3>❓ How to Play</h3>
+    <ol class="help-steps">
+      <li>Monsters walk the <b>road</b> from the cave to your town. Every one that reaches it costs a ❤️.</li>
+      <li>Tap a <b>grassy square</b>, then pick a turret. Turrets only shoot what's in their ring.</li>
+      <li>Tap a turret you own to <b>upgrade</b> it, change what it <b>aims at</b>, or sell it back.</li>
+      <li><b>Flyers cut straight across</b> the dotted line — Bomb Lobbers can't reach them.</li>
+      <li><b>Armour</b> soaks up a bit of every hit. Watchtowers punch straight through it.</li>
+      <li>Hit <b>▶▶</b> to send the next wave early and pocket the bonus gold. ⏩ speeds the whole battle up.</li>
+    </ol>
+    <button class="btn green wide" onclick="GK.UI.closeModal('modal-help')">Got it!</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti"></canvas>
+
+<!-- gamekit (vendored from rvenning/gamekit into lib/) -->
+<script src="lib/gk-util.js"></script>
+<script src="lib/gk-audio.js"></script>
+<script src="lib/gk-ui.js"></script>
+<script src="lib/gk-storage.js"></script>
+<script src="lib/gk-profiles.js"></script>
+<script src="lib/gk-pwa.js"></script>
+<script src="lib/gk-fx.js"></script>
+<script src="lib/gk-debug.js"></script>
+<script>
+  // Chunky sparks and stone chips, not fireworks: square particles, quick fall.
+  const Fx = GK.Fx.configure({
+    grav: 380, poolCap: 500, shakeMax: 11, shakeDecay: 28, shape: "square",
+    burstSpeed: 150, burstSize: 2.4, textSize: 15, textDy: -32, textCap: 22,
+    font: "'Baloo 2',sans-serif",
+  });
+</script>
+<script src="js/firebase-config.js"></script>
+<!-- data registries -->
+<script src="js/towers.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/upgrades.js"></script>
+<!-- systems -->
+<script src="js/game.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

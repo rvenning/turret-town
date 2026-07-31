@@ -1,0 +1,11 @@
+{
+  "name": "turret-town",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build turrets along the road and stop the monsters reaching town — a storybook tower defence built on gamekit.",
+  "scripts": {
+    "test": "node --test",
+    "report": "node tests/bot.test.js --report",
+    "icons": "node tools/make-icons.js"
+  }
+}

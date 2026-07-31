@@ -1,0 +1,16 @@
+{
+  "name": "Turret Town",
+  "short_name": "Turret Town",
+  "description": "Build turrets along the road and stop the monsters reaching town. Fifteen maps, three bosses, an armoury, and an endless siege.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#b9a984",
+  "theme_color": "#f4ead6",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
