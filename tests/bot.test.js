@@ -31,10 +31,11 @@ const { loadScripts } = require("../lib/tools/test-harness.js");
 const ROOT = path.join(__dirname, "..");
 const S = loadScripts({
   baseDir: ROOT,
-  files: ["js/towers.js", "js/enemies.js", "js/levels.js", "js/upgrades.js", "js/game.js"],
+  files: ["lib/gk-util.js", "lib/gk-path.js", "js/towers.js", "js/enemies.js", "js/levels.js", "js/upgrades.js", "js/game.js"],
   exports: ["Game", "TOWERS", "TOWER_BY_ID", "towerCost", "towerStat", "LEVELS", "SIEGE",
             "COLS", "ROWS", "UPGRADES", "upgradeLevel", "upgradeLoadout", "coinsFor",
             "makeRoute", "routeAt", "STEP"],
+  browser: true,
 });
 const { Game, TOWERS, towerCost, towerStat, LEVELS, SIEGE, COLS, ROWS,
         UPGRADES, upgradeLevel, upgradeLoadout, coinsFor, makeRoute, routeAt } = S;

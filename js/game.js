@@ -32,47 +32,16 @@ const SCORING = {
    Routes — a waypoint list becomes a polyline you can walk by distance.
    -------------------------------------------------------------------------*/
 
-// Waypoints are cell coordinates; a monster walks through cell CENTRES.
-function makeRoute(waypoints) {
-  const pts = waypoints.map(([x, y]) => ({ x: x + 0.5, y: y + 0.5 }));
-  const cum = [0];
-  for (let i = 1; i < pts.length; i++) {
-    cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
-  }
-  return { pts, cum, len: cum[cum.length - 1] };
-}
-
-// Where you are after walking `d` cells along the route.
-function routeAt(route, d) {
-  const { pts, cum } = route;
-  if (d <= 0) return { x: pts[0].x, y: pts[0].y };
-  if (d >= route.len) return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
-  let i = 1;
-  while (i < cum.length - 1 && cum[i] < d) i++;
-  const t = (d - cum[i - 1]) / (cum[i] - cum[i - 1]);
-  return {
-    x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t,
-    y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t,
-  };
-}
+// These are gamekit's GK.Route now — the same polyline-by-distance machinery
+// Rocket Rescue's caves use, extracted so both games share one tested copy.
+// Waypoints are cell coordinates and a monster walks through cell CENTRES,
+// which is what the 0.5 offset is for.
+function makeRoute(waypoints) { return GK.Route.make(waypoints, { offset: 0.5 }); }
+function routeAt(route, d) { return GK.Route.at(route, d); }
 
 // Every whole cell the road passes through, as an "x,y" key set. Used for
 // "can I build here?" and for painting the road.
-function routeCells(waypoints) {
-  const set = new Set();
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const [x0, y0] = waypoints[i], [x1, y1] = waypoints[i + 1];
-    const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
-    let x = x0, y = y0;
-    set.add(x + "," + y);
-    let guard = 0;
-    while ((x !== x1 || y !== y1) && guard++ < 500) {
-      x += dx; y += dy;
-      set.add(x + "," + y);
-    }
-  }
-  return set;
-}
+function routeCells(waypoints) { return GK.Route.cells(waypoints); }
 
 /* ---------------------------------------------------------------------------
    The game

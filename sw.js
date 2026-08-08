@@ -6,7 +6,7 @@
 // BUMP THE CACHE NAME whenever any shell file below changes, or devices keep
 // serving the copy they already have and the fix never lands.
 
-const CACHE = "turret-town-v1";
+const CACHE = "turret-town-v2";
 
 const SHELL = [
   "./",
@@ -22,6 +22,7 @@ const SHELL = [
   "lib/gk-pwa.js",
   "lib/gk-fx.js",
   "lib/gk-debug.js",
+  "lib/gk-path.js",
   "js/firebase-config.js",
   "js/towers.js",
   "js/enemies.js",

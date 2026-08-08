@@ -17,12 +17,13 @@ const { loadScripts } = require("../lib/tools/test-harness.js");
 const ROOT = path.join(__dirname, "..");
 const S = loadScripts({
   baseDir: ROOT,
-  files: ["js/towers.js", "js/enemies.js", "js/levels.js", "js/upgrades.js", "js/game.js"],
+  files: ["lib/gk-util.js", "lib/gk-path.js", "js/towers.js", "js/enemies.js", "js/levels.js", "js/upgrades.js", "js/game.js"],
   exports: ["TOWERS", "TOWER_BY_ID", "ENEMIES", "ENEMY_BY_ID", "LEVELS", "REGIONS",
-            "COLS", "ROWS", "SIEGE", "UPGRADES", "makeRoute", "routeCells", "Game"],
+            "COLS", "ROWS", "SIEGE", "UPGRADES", "makeRoute", "routeCells", "Game", "GK"],
+  browser: true,
 });
 const { TOWERS, ENEMIES, ENEMY_BY_ID, LEVELS, REGIONS, COLS, ROWS, SIEGE, UPGRADES,
-        makeRoute, routeCells } = S;
+        makeRoute, routeCells, GK } = S;
 
 const ALL_MAPS = [...LEVELS.map((l, i) => [`${i + 1}. ${l.name}`, l]), ["The Long Siege", SIEGE]];
 
@@ -51,48 +52,19 @@ function buildableCells(map) {
 
 /* ------------------------------- geometry ------------------------------- */
 
-test("every leg of every road is axis-aligned and has length", () => {
+// Road geometry is gamekit's GK.Route.lint now: axis-aligned legs with real
+// length, monsters entering and leaving OFF the board with every corner on it,
+// and no road doubling back over itself. Collecting the failures rather than
+// asserting inside the loop means one run names every bad map.
+test("every road is a legal road", () => {
+  const fails = [];
   for (const [label, map] of ALL_MAPS) {
-    assert.ok(map.path.length >= 2, `${label}: needs at least two waypoints`);
-    for (let i = 0; i < map.path.length - 1; i++) {
-      const [x0, y0] = map.path[i], [x1, y1] = map.path[i + 1];
-      const straight = (x0 === x1) !== (y0 === y1);
-      assert.ok(straight, `${label}: leg ${i} from ${x0},${y0} to ${x1},${y1} is diagonal or zero-length`);
-    }
+    fails.push(...GK.Route.lint(map.path, {
+      label, axisAligned: true, noCrossing: true,
+      bounds: { w: COLS, h: ROWS },
+    }));
   }
-});
-
-test("roads enter and leave off the board, and every corner is on it", () => {
-  for (const [label, map] of ALL_MAPS) {
-    const first = map.path[0], last = map.path[map.path.length - 1];
-    assert.ok(!inBounds(first[0], first[1]), `${label}: monsters must walk IN from off the board`);
-    assert.ok(!inBounds(last[0], last[1]), `${label}: the town gate must sit off the board`);
-    for (let i = 1; i < map.path.length - 1; i++) {
-      const [x, y] = map.path[i];
-      assert.ok(inBounds(x, y), `${label}: corner ${i} (${x},${y}) is off the board`);
-    }
-  }
-});
-
-test("no road crosses itself", () => {
-  for (const [label, map] of ALL_MAPS) {
-    const seen = new Set();
-    for (let i = 0; i < map.path.length - 1; i++) {
-      const [x0, y0] = map.path[i], [x1, y1] = map.path[i + 1];
-      const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
-      let x = x0, y = y0;
-      while (true) {
-        const k = x + "," + y;
-        // A corner is shared by two legs, so it is allowed to repeat once —
-        // anything else means the road doubles back over itself.
-        const isCorner = (x === x0 && y === y0) || (x === x1 && y === y1);
-        if (seen.has(k) && !isCorner) assert.fail(`${label}: the road crosses itself at ${k}`);
-        seen.add(k);
-        if (x === x1 && y === y1) break;
-        x += dx; y += dy;
-      }
-    }
-  }
+  assert.deepEqual(fails, []);
 });
 
 test("rocks are on the board and never on the road", () => {

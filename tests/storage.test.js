@@ -18,7 +18,7 @@ const ROOT = path.join(__dirname, "..");
 function load() {
   return loadScripts({
     baseDir: ROOT,
-    files: ["lib/gk-util.js", "lib/gk-storage.js", "js/towers.js", "js/enemies.js",
+    files: ["lib/gk-util.js", "lib/gk-storage.js", "lib/gk-path.js", "js/towers.js", "js/enemies.js",
             "js/levels.js", "js/upgrades.js", "js/storage.js"],
     exports: ["Storage", "PROGRESS", "UPGRADES", "upgradeLevel", "upgradeLoadout",
               "LEVELS", "coinsFor", "SIEGE_UNLOCK_LEVELS"],
